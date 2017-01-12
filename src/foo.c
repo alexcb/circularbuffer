@@ -75,6 +75,30 @@ int main() {
 	res = get_buffer_read( &cb, &p, &n );
 	assert( res );
 
+	// by this point everything has been read and buffer is now empty
+
+	res = get_buffer_write( &cb, 101, &p, &n );
+	assert( res );
+
+	for( int i = 0; i < 10; i++ ) {
+		res = get_buffer_write( &cb, 100, &p, &n );
+		assert( !res );
+		assert( p == cb.p );
+		assert( n == 100 );
+
+		buffer_mark_written( &cb, 100 );
+
+		for( int j = 0; j < 100; j++ ) {
+			res = get_buffer_read( &cb, &p, &n );
+			assert( !res );
+			assert( p == cb.p + j );
+			assert( n == 100 - j );
+
+			buffer_mark_read( &cb, 1 );
+		}
+
+	}
+
 	printf("pass\n");
 	return 0;
 }

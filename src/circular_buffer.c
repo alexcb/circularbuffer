@@ -19,6 +19,10 @@ int init_circular_buffer( CircularBuffer *cb, size_t buffer_size )
 int get_buffer_write_unsafe( CircularBuffer *buffer, size_t min_buffer_size, char **p, size_t *reserved_size )
 {
 	size_t n;
+
+	if( min_buffer_size > buffer->size ) {
+		return 1;
+	}
 	
 	// special case for empty buffer
 	if( buffer->len == 0 && buffer->read == 0 && buffer->write == 0) {

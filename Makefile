@@ -2,7 +2,7 @@ CC=gcc
 CCFLAGS=-g -std=gnu11 -I./src
 LDFLAGS=
 
-TARGET=my123
+TARGET=test
 
 SRC=$(wildcard src/**/*.c src/*.c)
 OBJ=$(SRC:%.c=%.o)
