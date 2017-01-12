@@ -47,29 +47,6 @@ int get_buffer_write_unsafe( CircularBuffer *buffer, size_t min_buffer_size, cha
 	}
 
 	return 1;
-	//if( buffer->buffer_write_i > buffer->buffer_read_i ) {
-	//	*reserved_size = buffer->buffer_size - buffer->buffer_write_i - 1;
-	//	if( *reserved_size < min_buffer_size ) {
-	//		*reserved_size = buffer->buffer_read_i - 1;
-	//		if( *reserved_size < min_buffer_size ) {
-	//			return 1;
-	//		}
-
-	//		buffer->buffer_len = buffer->buffer_write_i;
-	//		buffer->buffer_write_i = 0;
-	//		*p = buffer->buffer;
-	//		return 0;
-	//	}
-	//	*p = buffer->buffer + buffer->buffer_write_i;
-	//	return 0;
-	//} else {
-	//	*reserved_size = buffer->buffer_read_i - buffer->buffer_write_i;
-	//	if( *reserved_size < min_buffer_size ) {
-	//		return 1;
-	//	}
-	//	*p = buffer->buffer + buffer->buffer_write_i;
-	//	return 0;
-	//}
 }
 
 int get_buffer_write( CircularBuffer *buffer, size_t min_buffer_size, char **p, size_t *reserved_size )
@@ -132,9 +109,5 @@ void buffer_mark_read( CircularBuffer *buffer, size_t n )
 		buffer->write = 0;
 		buffer->len = 0;
 	}
-	//buffer->buffer_read_i += n;
-	//if( buffer->buffer_read_i >= buffer->buffer_len ) {
-	//	buffer->buffer_read_i = 0;
-	//}
 	pthread_mutex_unlock( &buffer->lock );
 }
