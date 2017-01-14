@@ -108,10 +108,5 @@ void buffer_mark_read( CircularBuffer *buffer, size_t n )
 {
 	pthread_mutex_lock( &buffer->lock );
 	buffer->read += n;
-	if( buffer->read == buffer->write ) {
-		buffer->read = 0;
-		buffer->write = 0;
-		buffer->len = 0;
-	}
 	pthread_mutex_unlock( &buffer->lock );
 }

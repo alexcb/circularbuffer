@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 
-int main() {
+int basic_test() {
 	int res;
 	char *p;
 	size_t n;
@@ -101,4 +101,8 @@ int main() {
 
 	printf("pass\n");
 	return 0;
+}
+
+int main() {
+	return basic_test();
 }
