@@ -1,6 +1,6 @@
 CC=gcc
 CCFLAGS=-g -std=gnu11 -I./src
-LDFLAGS=
+LDFLAGS=-lpthread
 
 TARGET=test
 
