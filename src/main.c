@@ -14,7 +14,7 @@ int basic_test() {
 
 	init_circular_buffer( &cb, 100 );
 
-	res = get_buffer_read( &cb, &p, &n );
+	res = get_buffer_read( &cb, 100, &p, &n );
 	assert( res );
 
 	res = get_buffer_write( &cb, 10, &p, &n );
@@ -44,7 +44,7 @@ int basic_test() {
 	res = get_buffer_write( &cb, 10, &p, &n );
 	assert( res );
 
-	res = get_buffer_read( &cb, &p, &n );
+	res = get_buffer_read( &cb, 100, &p, &n );
 	assert( !res );
 	assert( p == cb.p );
 	assert( n == 22 + 75 );
@@ -61,21 +61,21 @@ int basic_test() {
 	res = get_buffer_write( &cb, 1, &p, &n );
 	assert( res );
 
-	res = get_buffer_read( &cb, &p, &n );
+	res = get_buffer_read( &cb, 100, &p, &n );
 	assert( !res );
 	assert( p == cb.p + 50 );
 	assert( n == 22 + 75 - 50 );
 
 	buffer_mark_read( &cb, 47 );
 
-	res = get_buffer_read( &cb, &p, &n );
+	res = get_buffer_read( &cb, 100, &p, &n );
 	assert( !res );
 	assert( p == cb.p );
 	assert( n == 50 );
 
 	buffer_mark_read( &cb, 50 );
 
-	res = get_buffer_read( &cb, &p, &n );
+	res = get_buffer_read( &cb, 100, &p, &n );
 	assert( res );
 
 	printf("pass basic test\n");
@@ -103,7 +103,7 @@ void producer( void *data )
 			continue;
 		}
 		start = p - cb->p;
-		printf("producer: writing at %d available %d\n", start, buffer_free);
+		printf("producer: writing at %lu available %lu\n", start, buffer_free);
 
 		// magic num
 		*((unsigned char*)p) = 55;
@@ -124,7 +124,7 @@ void producer( void *data )
 		*((int*) p) = i++;
 
 		buffer_mark_written( cb, bytes_written );
-		printf("producer: wrote %d\n", bytes_written);
+		printf("producer: wrote %lu\n", bytes_written);
 	}
 	printf("producer done\n");
 }
@@ -146,12 +146,12 @@ void consumer( void *data )
 	printf("starting consumer\n");
 
 	for( i = 0; i < 1000; ) {
-		res = get_buffer_read( cb, &p, &buffer_avail );
+		res = get_buffer_read( cb, 10000, &p, &buffer_avail );
 		if( res ) {
 			continue;
 		}
 		start = p - cb->p;
-		printf("consumer: reading at %d available %d\n", start, buffer_avail);
+		printf("consumer: reading at %lu available %lu\n", start, buffer_avail);
 
 		// magic num
 		payload_id = *(unsigned char*) p;
@@ -192,7 +192,96 @@ int thread_test() {
 	pthread_join( consumer_thread, NULL );
 }
 
+int rewind_test() {
+	int res;
+	char *p;
+	size_t n;
+	CircularBuffer cb;
+
+	init_circular_buffer( &cb, 100 );
+
+	res = get_buffer_write( &cb, 10, &p, &n );
+	assert( !res );
+	assert( p == cb.p );
+	assert( n == 100 );
+
+	buffer_rewind_lock( &cb );
+	res = buffer_rewind_and_unlock( &cb, p );
+	assert( !res );
+
+	res = get_buffer_write( &cb, 10, &p, &n );
+	assert( !res );
+	assert( p == cb.p );
+	assert( n == 100 );
+
+	buffer_mark_written( &cb, 25 );
+
+	res = get_buffer_read( &cb, 10, &p, &n );
+	assert( !res );
+	assert( p == cb.p );
+	assert( n == 10 );
+
+	buffer_mark_read( &cb, 10 );
+
+	buffer_rewind_lock( &cb );
+	res = buffer_rewind_and_unlock( &cb, p+15 );
+	assert( !res );
+	assert( cb.write = 15 );
+
+	res = get_buffer_read( &cb, 10, &p, &n );
+	assert( !res );
+	assert( p == cb.p + 10 );
+	assert( n == 5 );
+	
+	buffer_mark_read( &cb, 5 );
+
+	res = get_buffer_read( &cb, 10, &p, &n );
+	assert( res );
+
+	// special case write causes snap back to 0
+	res = get_buffer_write( &cb, 50, &p, &n );
+	assert( !res );
+	assert( n == 100 );
+	assert( p == cb.p );
+
+	buffer_mark_written( &cb, 85 );
+
+	res = get_buffer_read( &cb, 80, &p, &n );
+	assert( !res );
+	assert( p == cb.p );
+	assert( n == 80 );
+	
+	buffer_mark_read( &cb, 80 );
+
+	res = get_buffer_write( &cb, 50, &p, &n );
+	assert( !res );
+	assert( n == 80 );
+	assert( p == cb.p );
+
+	buffer_mark_written( &cb, 50 );
+
+	buffer_rewind_lock( &cb );
+	res = buffer_rewind_and_unlock( &cb, p+30 );
+	assert( !res );
+	assert( cb.write = 30 );
+
+	res = get_buffer_read( &cb, 80, &p, &n );
+	assert( !res );
+	assert( p == cb.p + 80 );
+	assert( n == 5 );
+
+	buffer_mark_read( &cb, 5 );
+
+	res = get_buffer_read( &cb, 80, &p, &n );
+	assert( !res );
+	assert( p == cb.p );
+	assert( n == 30 );
+
+	return 0;
+}
+
 int main() {
 	basic_test();
 	thread_test();
+	rewind_test();
 }
